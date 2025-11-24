@@ -6,7 +6,7 @@ nodes:
     outputs:
       - image
     env:
-      CAPTURE_PATH: 0
+      CAPTURE_PATH: 6
       IMAGE_WIDTH: 640
       IMAGE_HEIGHT: 480
 
@@ -17,7 +17,7 @@ nodes:
     outputs:
       - image
     env:
-      CAPTURE_PATH: 2
+      CAPTURE_PATH: 4
       IMAGE_WIDTH: 640
       IMAGE_HEIGHT: 480
 
