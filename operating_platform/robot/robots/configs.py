@@ -562,7 +562,7 @@ class SO101RobotConfig(ManipulatorRobotConfig):
         }
     )
 
-    use_videos: bool = False
+    use_videos: bool = True
 
     microphones: dict[str, int] = field(
         default_factory=lambda: {

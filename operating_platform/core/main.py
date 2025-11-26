@@ -68,113 +68,113 @@ class ControlPipelineConfig:
     def __get_path_fields__(cls) -> list[str]:
         """This enables the parser to load config from the policy using `--policy.path=local/dir`"""
         return ["control.policy"]
-#自己写了份初稿发现可以运行，采用AI润色完善代码
-class VideoEncoderThread(threading.Thread):
-    """
-    后台视频编码守护线程：
-    - 自动从任务队列读取任务
-    - 每个任务使用 ffmpeg 将图片序列编码为 mp4 视频
-    - 支持多线程并发加速编码
-    """
+# #自己写了份初稿发现可以运行，采用AI润色完善代码
+# class VideoEncoderThread(threading.Thread):
+#     """
+#     后台视频编码守护线程：
+#     - 自动从任务队列读取任务
+#     - 每个任务使用 ffmpeg 将图片序列编码为 mp4 视频
+#     - 支持多线程并发加速编码
+#     """
 
-    def __init__(self, num_workers: int = 3):
-        """
-        :param num_workers: 并发 ffmpeg 编码线程数（建议 2~4）
-        """
-        super().__init__(daemon=True)
-        self.task_queue = queue.Queue()
-        self.running = True
-        self.num_workers = num_workers
-        self.workers: list[threading.Thread] = []
+#     def __init__(self, num_workers: int = 3):
+#         """
+#         :param num_workers: 并发 ffmpeg 编码线程数（建议 2~4）
+#         """
+#         super().__init__(daemon=True)
+#         self.task_queue = queue.Queue()
+#         self.running = True
+#         self.num_workers = num_workers
+#         self.workers: list[threading.Thread] = []
 
-    def run(self):
-        """主线程启动所有 worker 并维持运行"""
-        print(f"[VideoEncoderThread] Starting with {self.num_workers} workers...")
-        for i in range(self.num_workers):
-            t = threading.Thread(target=self._worker_loop, name=f"EncoderWorker-{i}", daemon=True)
-            t.start()
-            self.workers.append(t)
+#     def run(self):
+#         """主线程启动所有 worker 并维持运行"""
+#         print(f"[VideoEncoderThread] Starting with {self.num_workers} workers...")
+#         for i in range(self.num_workers):
+#             t = threading.Thread(target=self._worker_loop, name=f"EncoderWorker-{i}", daemon=True)
+#             t.start()
+#             self.workers.append(t)
 
-        # 主线程只是负责维持生命周期
-        while self.running:
-            time.sleep(0.5)
+#         # 主线程只是负责维持生命周期
+#         while self.running:
+#             time.sleep(0.5)
 
-    def _worker_loop(self):
-        """每个 worker 从队列中拉取任务并执行"""
-        while self.running:
-            try:
-                task = self.task_queue.get(timeout=1)
-            except queue.Empty:
-                continue
+#     def _worker_loop(self):
+#         """每个 worker 从队列中拉取任务并执行"""
+#         while self.running:
+#             try:
+#                 task = self.task_queue.get(timeout=1)
+#             except queue.Empty:
+#                 continue
 
-            try:
-                if task is not None:
-                    self.encode_video(**task)
-            except Exception as e:
-                print(f"[{threading.current_thread().name}] Error: {e}")
-            finally:
-                self.task_queue.task_done()
+#             try:
+#                 if task is not None:
+#                     self.encode_video(**task)
+#             except Exception as e:
+#                 print(f"[{threading.current_thread().name}] Error: {e}")
+#             finally:
+#                 self.task_queue.task_done()
 
-    def encode_video(self, img_dir: Path, output_path: Path, fps: int = 30):
-        """
-        使用 ffmpeg 将指定文件夹下的图片编码为视频
-        """
-        if not img_dir.exists():
-            print(f"[VideoEncoderThread] Directory not found: {img_dir}")
-            return
+#     def encode_video(self, img_dir: Path, output_path: Path, fps: int = 30):
+#         """
+#         使用 ffmpeg 将指定文件夹下的图片编码为视频
+#         """
+#         if not img_dir.exists():
+#             print(f"[VideoEncoderThread] Directory not found: {img_dir}")
+#             return
 
-        images = sorted([p for p in img_dir.glob("*.png")])
-        if not images:
-            print(f"[VideoEncoderThread] No images found in {img_dir}")
-            return
+#         images = sorted([p for p in img_dir.glob("*.png")])
+#         if not images:
+#             print(f"[VideoEncoderThread] No images found in {img_dir}")
+#             return
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        print(f"[{threading.current_thread().name}] Encoding {len(images)} frames -> {output_path}")
+#         output_path.parent.mkdir(parents=True, exist_ok=True)
+#         print(f"[{threading.current_thread().name}] Encoding {len(images)} frames -> {output_path}")
 
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-framerate", str(fps),
-            "-pattern_type", "glob",
-            "-i", "*.png",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            str(output_path),
-        ]
+#         cmd = [
+#             "ffmpeg",
+#             "-y",
+#             "-framerate", str(fps),
+#             "-pattern_type", "glob",
+#             "-i", "*.png",
+#             "-c:v", "libx264",
+#             "-pix_fmt", "yuv420p",
+#             str(output_path),
+#         ]
 
-        try:
-            subprocess.run(
-                cmd,
-                cwd=str(img_dir),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-            )
-            print(f"[{threading.current_thread().name}] Finished: {output_path}")
-        except subprocess.CalledProcessError as e:
-            print(f"[{threading.current_thread().name}] ffmpeg failed for {img_dir}: {e}")
+#         try:
+#             subprocess.run(
+#                 cmd,
+#                 cwd=str(img_dir),
+#                 stdout=subprocess.DEVNULL,
+#                 stderr=subprocess.DEVNULL,
+#                 check=True,
+#             )
+#             print(f"[{threading.current_thread().name}] Finished: {output_path}")
+#         except subprocess.CalledProcessError as e:
+#             print(f"[{threading.current_thread().name}] ffmpeg failed for {img_dir}: {e}")
 
-    def add_task(self, img_dir: Path, output_path: Path, fps: int = 30):
-        """添加编码任务"""
-        self.task_queue.put({"img_dir": img_dir, "output_path": output_path, "fps": fps})
+#     def add_task(self, img_dir: Path, output_path: Path, fps: int = 30):
+#         """添加编码任务"""
+#         self.task_queue.put({"img_dir": img_dir, "output_path": output_path, "fps": fps})
 
-    def stop(self):
-        """停止所有线程（不等待队列）"""
-        print("[VideoEncoderThread] Stopping encoder threads...")
-        self.running = False
-        # 给每个worker一个None任务，确保其能退出阻塞
-        for _ in range(self.num_workers):
-            self.task_queue.put(None)
-        print("[VideoEncoderThread] Stop signal sent to workers.")
-    def is_idle(self) -> bool:
-        """
-        检查编码器是否空闲：
-        - 队列为空且所有 ffmpeg 子进程执行完毕
-        """
-        return self.task_queue.empty()
+#     def stop(self):
+#         """停止所有线程（不等待队列）"""
+#         print("[VideoEncoderThread] Stopping encoder threads...")
+#         self.running = False
+#         # 给每个worker一个None任务，确保其能退出阻塞
+#         for _ in range(self.num_workers):
+#             self.task_queue.put(None)
+#         print("[VideoEncoderThread] Stop signal sent to workers.")
+#     def is_idle(self) -> bool:
+#         """
+#         检查编码器是否空闲：
+#         - 队列为空且所有 ffmpeg 子进程执行完毕
+#         """
+#         return self.task_queue.empty()
     
-def record_loop(cfg: ControlPipelineConfig, daemon: Daemon, video_encoder:VideoEncoderThread):
-
+# def record_loop(cfg: ControlPipelineConfig, daemon: Daemon, video_encoder:VideoEncoderThread):
+def record_loop(cfg: ControlPipelineConfig, daemon: Daemon):
 
     # 确保数据集根目录存在
     dataset_path = DOROBOT_DATASET
@@ -298,51 +298,51 @@ def record_loop(cfg: ControlPipelineConfig, daemon: Daemon, video_encoder:VideoE
                 record.stop()
                 record.save()
 
-                # 🚀 自动遍历所有相机目录进行视频编码
-                # cameras = ["observation.images.image_top", "observation.images.image_wrist","observation.images.image_wrist2"]
-                cameras = ["observation.images.image_top", "observation.images.image_wrist"]
-                for cam in cameras:
-                    logging.info(f"Encoding episode index: {record.last_record_episode_index}")
-                    episode_dir =  Path(record.record_cfg.root) / "images"  /cam / f"episode_{record.last_record_episode_index:06d}"
-                    video_output = Path(record.record_cfg.root) / "videos" / "chunk-000" /cam / f"episode_{record.last_record_episode_index:06d}.mp4"
-                    if episode_dir.exists():
-                        video_encoder.add_task(img_dir=episode_dir, output_path=video_output, fps=cfg.record.fps)
-                        logging.info(f"[record_loop] Queued video encoding for {cam}")
-                    else:
-                        logging.warning(f"[record_loop] Image directory not found: {episode_dir}")
+                # # 🚀 自动遍历所有相机目录进行视频编码
+                # # cameras = ["observation.images.image_top", "observation.images.image_wrist","observation.images.image_wrist2"]
+                # cameras = ["observation.images.image_top", "observation.images.image_wrist"]
+                # for cam in cameras:
+                #     logging.info(f"Encoding episode index: {record.last_record_episode_index}")
+                #     episode_dir =  Path(record.record_cfg.root) / "images"  /cam / f"episode_{record.last_record_episode_index:06d}"
+                #     video_output = Path(record.record_cfg.root) / "videos" / "chunk-000" /cam / f"episode_{record.last_record_episode_index:06d}.mp4"
+                #     if episode_dir.exists():
+                #         video_encoder.add_task(img_dir=episode_dir, output_path=video_output, fps=cfg.record.fps)
+                #         logging.info(f"[record_loop] Queued video encoding for {cam}")
+                #     else:
+                #         logging.warning(f"[record_loop] Image directory not found: {episode_dir}")
 
-                # ✅ 等待所有任务完成（阻塞等待）
-                logging.info("[record_loop] Waiting for all video encoding tasks to finish...")
-                video_encoder.task_queue.join()  # 阻塞直到所有编码任务完成
-                   # ✅ 阻塞等待任务完成
-                logging.info("[record_loop] Waiting for all video encoding tasks to finish...")
-                while not video_encoder.task_queue.empty():
-                    remaining = video_encoder.task_queue.qsize()
-                    logging.info(f"[record_loop] {remaining} encoding tasks remaining...")
-                    time.sleep(1)
-                # 停止视频编码线程（安全退出）
-                video_encoder.stop()
-                video_encoder.join(timeout=5)
+                # # ✅ 等待所有任务完成（阻塞等待）
+                # logging.info("[record_loop] Waiting for all video encoding tasks to finish...")
+                # video_encoder.task_queue.join()  # 阻塞直到所有编码任务完成
+                #    # ✅ 阻塞等待任务完成
+                # logging.info("[record_loop] Waiting for all video encoding tasks to finish...")
+                # while not video_encoder.task_queue.empty():
+                #     remaining = video_encoder.task_queue.qsize()
+                #     logging.info(f"[record_loop] {remaining} encoding tasks remaining...")
+                #     time.sleep(1)
+                # # 停止视频编码线程（安全退出）
+                # video_encoder.stop()
+                # video_encoder.join(timeout=5)
 
-                logging.info("[record_loop] All videos encoded. Exiting safely.")
+                # logging.info("[record_loop] All videos encoded. Exiting safely.")
                 return
         
         # 10. 保存当前episode
         record.stop()
         record.save()
 
-        # 异步添加视频编码任务
-        # cameras = ["observation.images.image_top", "observation.images.image_wrist","observation.images.image_wrist2"]
-        cameras = ["observation.images.image_top", "observation.images.image_wrist"]
-        for cam in cameras:
-            episode_dir =  Path(record.record_cfg.root) / "images" / cam / f"episode_{record.last_record_episode_index:06d}"
-            video_output = Path(record.record_cfg.root) / "videos" / "chunk-000" / cam / f"episode_{record.last_record_episode_index:06d}.mp4"
-            if episode_dir.exists():
-                video_encoder.add_task(img_dir=episode_dir, output_path=video_output, fps=cfg.record.fps)
-                logging.info(f"[record_loop] Queued video encoding for {cam}")
-            else:
-                logging.warning(f"[record_loop] Image directory not found: {episode_dir}")
-        logging.info(f"Episode saved. Total episodes: {record.dataset.meta.total_episodes}")
+        # # 异步添加视频编码任务
+        # # cameras = ["observation.images.image_top", "observation.images.image_wrist","observation.images.image_wrist2"]
+        # cameras = ["observation.images.image_top", "observation.images.image_wrist"]
+        # for cam in cameras:
+        #     episode_dir =  Path(record.record_cfg.root) / "images" / cam / f"episode_{record.last_record_episode_index:06d}"
+        #     video_output = Path(record.record_cfg.root) / "videos" / "chunk-000" / cam / f"episode_{record.last_record_episode_index:06d}.mp4"
+        #     if episode_dir.exists():
+        #         video_encoder.add_task(img_dir=episode_dir, output_path=video_output, fps=cfg.record.fps)
+        #         logging.info(f"[record_loop] Queued video encoding for {cam}")
+        #     else:
+        #         logging.warning(f"[record_loop] Image directory not found: {episode_dir}")
+        # logging.info(f"Episode saved. Total episodes: {record.dataset.meta.total_episodes}")
 
         
         # 11. 环境重置（带超时和可视化）
@@ -351,7 +351,7 @@ def record_loop(cfg: ControlPipelineConfig, daemon: Daemon, video_encoder:VideoE
         logging.info("Note: Robot will automatically reset in 10 seconds if no input")
         
         reset_start = time.time()
-        reset_timeout = 60  # 10秒超时
+        reset_timeout = 80  # 80秒超时
         
         while time.time() - reset_start < reset_timeout:
             daemon.update()
@@ -386,18 +386,18 @@ def main(cfg: ControlPipelineConfig):
     daemon.start(cfg.robot)
     daemon.update()
 
-    video_encoder = VideoEncoderThread()
-    video_encoder.start()
+    # video_encoder = VideoEncoderThread()
+    # video_encoder.start()
 
     try:
-        record_loop(cfg, daemon,video_encoder)
-            
+        # record_loop(cfg, daemon,video_encoder)
+        record_loop(cfg, daemon)      
     except KeyboardInterrupt:
         print("coordinator and daemon stop")
 
     finally:
         daemon.stop()
-        video_encoder.stop()
+        # video_encoder.stop()
         cv2.destroyAllWindows()
     
 
