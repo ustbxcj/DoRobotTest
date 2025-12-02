@@ -16,7 +16,7 @@ cd DoRobot
 Use the setup script to create a unified conda environment with all dependencies:
 
 ```bash
-# Core only - for data collection (fastest install)
+# Core only - for data collection (fastest install)11
 bash scripts/setup_env.sh
 
 # With training dependencies (for policy training)
